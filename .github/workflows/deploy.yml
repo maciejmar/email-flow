@@ -3,7 +3,7 @@ name: Deploy Foga Flow
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -21,8 +21,8 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
-          source: "backend,frontend,docker-compose.prod.yml,README.md"
-          target: "/opt/foga-flow"
+          source: "backend,frontend,deploy,docker-compose.prod.yml,README.md"
+          target: "/opt/email-flow"
           strip_components: 0
           overwrite: true
 
@@ -45,8 +45,8 @@ jobs:
           envs: APP_SECRET_KEY,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,FRONTEND_ORIGIN,EMAIL_MCP_MODE,EMAIL_MCP_SERVER_NAME,EMAIL_POLL_LIMIT
           script: |
             set -eu
-            mkdir -p /opt/foga-flow
-            cd /opt/foga-flow
+            mkdir -p /opt/email-flow
+            cd /opt/email-flow
             cat > .env.prod <<EOF
             SECRET_KEY=${APP_SECRET_KEY}
             POSTGRES_DB=${POSTGRES_DB}

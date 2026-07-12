@@ -17,6 +17,7 @@ MVP aplikacji do obslugi zapytan mailowych klientow w stacku `LangGraph + Python
 
 - `backend/` - FastAPI, SQLAlchemy, LangGraph, auth, logika biznesowa
 - `frontend/` - Angular standalone app
+- `deploy/nginx/email-flow.conf` - konfiguracja pod zewnetrzny Nginx na serwerze
 - `docker-compose.yml` - lokalny Postgres
 - `docker-compose.prod.yml` - produkcyjny deploy na Docker Compose
 - `.github/workflows/deploy.yml` - automatyczny deploy przez GitHub Actions
@@ -54,36 +55,52 @@ Frontend bedzie dostepny pod `http://localhost:4200`, a `proxy.conf.json` przeki
 
 ## Deploy na serwer 95.158.64.196
 
-Workflow deployu uruchamia sie po `push` na branch `main` albo recznie przez `workflow_dispatch`.
-Kod jest kopiowany na serwer do katalogu `/opt/foga-flow`, a potem GitHub Actions wykonuje:
+Workflow deployu uruchamia sie po `push` na branch `master` albo recznie przez `workflow_dispatch`.
+Kod jest kopiowany na serwer do katalogu `/opt/email-flow`, a potem GitHub Actions wykonuje:
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ```
 
+W tej wersji aplikacja nie zajmuje publicznego portu `80`. Kontener `frontend` wystawia sie tylko lokalnie na serwerze pod `127.0.0.1:8085`, a publiczny ruch ma obsluzyc istniejacy Nginx systemowy.
+
 ### Wymagania na serwerze
 
 - zainstalowany Docker i Docker Compose,
 - uzytkownik z dostepem SSH,
-- otwarty port `80`,
-- katalog docelowy `/opt/foga-flow` z prawami zapisu dla uzytkownika deployujacego.
+- port SSH dostepny na `2222`,
+- katalog docelowy `/opt/email-flow` z prawami zapisu dla uzytkownika deployujacego,
+- dzialajacy Nginx na ho?cie.
 
 ### Sekrety GitHub Actions
 
 Ustaw w repozytorium te sekrety:
 
 - `DEPLOY_HOST` = `95.158.64.196`
-- `DEPLOY_PORT` = `22`
+- `DEPLOY_PORT` = `2222`
 - `DEPLOY_USER` = uzytkownik SSH na serwerze
 - `DEPLOY_SSH_KEY` = prywatny klucz SSH do deployu
 - `APP_SECRET_KEY` = sekret JWT backendu
-- `POSTGRES_DB` = nazwa bazy, np. `foga_flow`
+- `POSTGRES_DB` = nazwa bazy, np. `email_flow`
 - `POSTGRES_USER` = uzytkownik Postgresa
 - `POSTGRES_PASSWORD` = haslo Postgresa
 - `FRONTEND_ORIGIN` = publiczny origin frontendu, np. `http://95.158.64.196`
 - `EMAIL_MCP_MODE` = na start moze zostac `mock`
 - `EMAIL_MCP_SERVER_NAME` = nazwa integracji MCP, np. `email`
 - `EMAIL_POLL_LIMIT` = np. `20`
+
+### Konfiguracja zewnetrznego Nginx na serwerze
+
+Skopiuj `deploy/nginx/email-flow.conf` na serwer, np. do `/etc/nginx/sites-available/email-flow.conf`, a potem podlacz go do aktywnej konfiguracji Nginx. Przyklad:
+
+```bash
+sudo cp /opt/email-flow/deploy/nginx/email-flow.conf /etc/nginx/sites-available/email-flow.conf
+sudo ln -sf /etc/nginx/sites-available/email-flow.conf /etc/nginx/sites-enabled/email-flow.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Ta konfiguracja kieruje ruch z publicznego `http://95.158.64.196` do aplikacji nasluchujacej lokalnie na `127.0.0.1:8085`.
 
 ## Konfiguracja MCP do emaila
 
