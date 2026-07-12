@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      APP_NAME: Foga Flow API
+      SECRET_KEY: ${SECRET_KEY}
+      ACCESS_TOKEN_EXPIRE_MINUTES: 1440
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
+      EMAIL_MCP_MODE: ${EMAIL_MCP_MODE}
+      EMAIL_MCP_SERVER_NAME: ${EMAIL_MCP_SERVER_NAME}
+      EMAIL_POLL_LIMIT: ${EMAIL_POLL_LIMIT}
+      UPLOAD_DIR: uploads
+    depends_on:
+      - postgres
+    volumes:
+      - backend_uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  backend_uploads:

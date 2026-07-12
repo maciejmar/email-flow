@@ -1,0 +1,61 @@
+name: Deploy Foga Flow
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload project to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          source: "backend,frontend,docker-compose.prod.yml,README.md"
+          target: "/opt/foga-flow"
+          strip_components: 0
+          overwrite: true
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          APP_SECRET_KEY: ${{ secrets.APP_SECRET_KEY }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          FRONTEND_ORIGIN: ${{ secrets.FRONTEND_ORIGIN }}
+          EMAIL_MCP_MODE: ${{ secrets.EMAIL_MCP_MODE }}
+          EMAIL_MCP_SERVER_NAME: ${{ secrets.EMAIL_MCP_SERVER_NAME }}
+          EMAIL_POLL_LIMIT: ${{ secrets.EMAIL_POLL_LIMIT }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          envs: APP_SECRET_KEY,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,FRONTEND_ORIGIN,EMAIL_MCP_MODE,EMAIL_MCP_SERVER_NAME,EMAIL_POLL_LIMIT
+          script: |
+            set -eu
+            mkdir -p /opt/foga-flow
+            cd /opt/foga-flow
+            cat > .env.prod <<EOF
+            SECRET_KEY=${APP_SECRET_KEY}
+            POSTGRES_DB=${POSTGRES_DB}
+            POSTGRES_USER=${POSTGRES_USER}
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            FRONTEND_ORIGIN=${FRONTEND_ORIGIN}
+            EMAIL_MCP_MODE=${EMAIL_MCP_MODE}
+            EMAIL_MCP_SERVER_NAME=${EMAIL_MCP_SERVER_NAME}
+            EMAIL_POLL_LIMIT=${EMAIL_POLL_LIMIT}
+            EOF
+            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+            docker image prune -f
