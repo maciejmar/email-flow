@@ -26,7 +26,7 @@ import { InquiryService } from '../../core/inquiry.service';
     <section class="grid layout">
       <article class="card panel">
         <h2>Cennik</h2>
-        <p>Plik Excel powinien miec kolumny: `sku`, `name`, `unit`, `price`.</p>
+        <p>Plik Excel powinien miec kolumny: sku, name, unit, price.</p>
         <input type="file" accept=".xlsx" (change)="onFileSelected($event)" />
         <p *ngIf="uploadMessage()">{{ uploadMessage() }}</p>
       </article>
@@ -45,7 +45,7 @@ import { InquiryService } from '../../core/inquiry.service';
         <div class="inquiry-head">
           <div>
             <h3>{{ inquiry.email_subject }}</h3>
-            <p>{{ inquiry.email_from }} • {{ inquiry.created_at | date:'short' }}</p>
+            <p>{{ inquiry.email_from }} - {{ inquiry.created_at | date:'short' }}</p>
           </div>
           <span class="tag">{{ inquiry.status }}</span>
         </div>
@@ -166,4 +166,3 @@ export class DashboardComponent {
     void this.router.navigateByUrl('/login');
   }
 }
-
