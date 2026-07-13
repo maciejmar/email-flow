@@ -105,3 +105,4 @@ W tym MVP jest przygotowany adapter `MCPEmailClient`, ktory ma jeden punkt integ
 - `backend/app/services/email_mcp.py`
 
 Tam nalezy podpiac konkretny transport MCP do wybranego serwera obslugujacego skrzynke mailowa. Obecnie adapter dziala w trybie `mock`, zeby caly przeplyw aplikacji byl gotowy bez blokowania sie na szczegolach konkretnego serwera MCP.
+
