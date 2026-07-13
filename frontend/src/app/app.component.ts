@@ -9,7 +9,9 @@ import { AuthService } from './core/auth.service';
   imports: [RouterOutlet],
   template: `
     <div class="shell">
-      <router-outlet />
+      <main class="app-layer">
+        <router-outlet />
+      </main>
     </div>
   `,
 })
@@ -23,4 +25,3 @@ export class AppComponent {
     }
   }
 }
-

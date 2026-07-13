@@ -10,44 +10,61 @@ import { AuthService } from '../../core/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <section class="card login">
-      <div>
-        <p class="tag">Nowe konto</p>
-        <h1>Rejestracja operatora</h1>
-        <p>Konto jest wymagane, aby wejsc do dashboardu i obslugiwac zapytania klientow.</p>
+    <section class="auth-shell">
+      <div class="glass-panel auth-card row g-0">
+        <div class="auth-aside col-lg-5 p-4 p-lg-5 d-flex flex-column justify-content-between">
+          <div>
+            <span class="brand-badge mb-4">Nowy operator</span>
+            <h1 class="section-title text-white mb-3">Zaloz konto do obslugi skrzynki i ofert.</h1>
+            <p class="mb-0 opacity-75 fs-5">Rejestracja odblokowuje dashboard, wgrywanie cennika oraz podglad odpowiedzi generowanych przez agenta.</p>
+          </div>
+
+          <div class="feature-tile mt-5 text-dark">
+            <div class="text-uppercase small fw-semibold text-muted mb-2">Co dostajesz</div>
+            <ul class="mb-0 ps-3 d-grid gap-2">
+              <li>Podglad zapytan klientow w jednym miejscu</li>
+              <li>Kosztorysy tworzone z pliku Excel</li>
+              <li>Szkice odpowiedzi gotowe do wysylki</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="col-lg-7 p-4 p-lg-5">
+          <div class="mx-auto" style="max-width: 480px;">
+            <span class="status-badge mb-3">Rejestracja</span>
+            <h2 class="fw-bold mb-2">Utworz konto operatora</h2>
+            <p class="section-copy mb-4">Konto jest wymagane, aby wejsc do aplikacji i obslugiwac zapytania w dashboardzie.</p>
+
+            <form class="d-grid gap-3" (ngSubmit)="submit()">
+              <div>
+                <label class="form-label fw-semibold">Imie i nazwisko</label>
+                <input class="form-control form-control-lg" [(ngModel)]="fullName" name="fullName" required />
+              </div>
+
+              <div>
+                <label class="form-label fw-semibold">Email</label>
+                <input class="form-control form-control-lg" [(ngModel)]="email" name="email" type="email" required />
+              </div>
+
+              <div>
+                <label class="form-label fw-semibold">Haslo</label>
+                <input class="form-control form-control-lg" [(ngModel)]="password" name="password" type="password" required />
+              </div>
+
+              <div *ngIf="error()" class="alert alert-danger mb-0">{{ error() }}</div>
+
+              <button class="btn btn-primary btn-lg rounded-pill mt-2" type="submit">Utworz konto</button>
+            </form>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mt-4 pt-2">
+              <span class="text-muted-soft">Masz juz konto?</span>
+              <a class="btn btn-outline-dark rounded-pill px-4" routerLink="/login">Przejdz do logowania</a>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <form class="grid" (ngSubmit)="submit()">
-        <label class="field">
-          <span>Imie i nazwisko</span>
-          <input [(ngModel)]="fullName" name="fullName" required />
-        </label>
-        <label class="field">
-          <span>Email</span>
-          <input [(ngModel)]="email" name="email" type="email" required />
-        </label>
-        <label class="field">
-          <span>Haslo</span>
-          <input [(ngModel)]="password" name="password" type="password" required />
-        </label>
-        <p *ngIf="error()" style="color:#8f4311">{{ error() }}</p>
-        <button class="btn" type="submit">Utworz konto</button>
-      </form>
-
-      <a routerLink="/login">Masz konto? Zaloguj sie</a>
     </section>
   `,
-  styles: [`
-    .login {
-      max-width: 560px;
-      margin: 48px auto;
-      padding: 32px;
-      display: grid;
-      gap: 24px;
-    }
-    h1 { margin: 0 0 8px; font-size: 40px; }
-    p { margin: 0; line-height: 1.6; }
-  `],
 })
 export class RegisterComponent {
   private auth = inject(AuthService);
