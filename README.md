@@ -137,3 +137,5 @@ Tam nalezy podpiac konkretny transport MCP do wybranego serwera obslugujacego sk
 - integracja MCP jest przygotowana architektonicznie, ale nie jest jeszcze spieta z konkretnym dostawca skrzynki,
 - klasyfikacja zapytan i budowa kosztorysu dzialaja regulowo z miejscem na dalsze nody LangGraph,
 - odpowiedz mailowa jest generowana i zapisywana w bazie, ale fizyczna wysylka przez MCP wymaga dopiecia konkretnej implementacji klienta.
+
+#end of file
