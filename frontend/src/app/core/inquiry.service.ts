@@ -4,7 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { Inquiry } from './api.types';
 
-const API_BASE = '/api';
+const API_BASE = 'api';
 
 @Injectable({ providedIn: 'root' })
 export class InquiryService {

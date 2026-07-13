@@ -51,25 +51,25 @@ npm install
 npm start
 ```
 
-Frontend bedzie dostepny pod `http://localhost:4200`, a `proxy.conf.json` przekieruje lokalne `/api` do backendu na `http://localhost:8000`.
+Frontend bedzie dostepny pod `http://localhost:4200/email-flow/`, a `proxy.conf.json` przekieruje lokalne `/email-flow/api` do backendu na `http://localhost:8000` po dopieciu lokalnego proxy pod prefiks.
 
 ## Deploy na serwer 95.158.64.196
 
 Workflow deployu uruchamia sie po `push` na branch `master` albo recznie przez `workflow_dispatch`.
-Kod jest kopiowany na serwer do katalogu `/opt/email-flow`, a potem GitHub Actions wykonuje:
+Kod jest kopiowany na serwer do katalogu `/home/webaby/email-flow`, a potem GitHub Actions wykonuje:
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ```
 
-W tej wersji aplikacja nie zajmuje publicznego portu `80`. Kontener `frontend` wystawia sie tylko lokalnie na serwerze pod `127.0.0.1:8085`, a publiczny ruch ma obsluzyc istniejacy Nginx systemowy.
+W tej wersji aplikacja jest wystawiona pod prefiksem `http://95.158.64.196/email-flow/`. Kontener `frontend` wystawia sie tylko lokalnie na serwerze pod `127.0.0.1:8085`, a publiczny ruch obsluguje istniejacy Nginx systemowy.
 
 ### Wymagania na serwerze
 
 - zainstalowany Docker i Docker Compose,
 - uzytkownik z dostepem SSH,
 - port SSH dostepny na `2222`,
-- katalog docelowy `/opt/email-flow` z prawami zapisu dla uzytkownika deployujacego,
+- katalog docelowy `/home/webaby/email-flow` z prawami zapisu dla uzytkownika deployujacego,
 - dzialajacy Nginx na ho?cie.
 
 ### Sekrety GitHub Actions
@@ -78,7 +78,7 @@ Ustaw w repozytorium te sekrety:
 
 - `DEPLOY_HOST` = `95.158.64.196`
 - `DEPLOY_PORT` = `2222`
-- `DEPLOY_USER` = uzytkownik SSH na serwerze
+- `DEPLOY_USER` = `webaby`
 - `DEPLOY_SSH_KEY` = prywatny klucz SSH do deployu
 - `APP_SECRET_KEY` = sekret JWT backendu
 - `POSTGRES_DB` = nazwa bazy, np. `email_flow`
@@ -91,16 +91,16 @@ Ustaw w repozytorium te sekrety:
 
 ### Konfiguracja zewnetrznego Nginx na serwerze
 
-Skopiuj `deploy/nginx/email-flow.conf` na serwer, np. do `/etc/nginx/sites-available/email-flow.conf`, a potem podlacz go do aktywnej konfiguracji Nginx. Przyklad:
+Skopiuj `deploy/nginx/email-flow.conf` na serwer, np. do `/etc/nginx/sites-available/email-flow.conf`, a potem podlacz go do aktywnej konfiguracji Nginx:
 
 ```bash
-sudo cp /opt/email-flow/deploy/nginx/email-flow.conf /etc/nginx/sites-available/email-flow.conf
+sudo cp /home/webaby/email-flow/deploy/nginx/email-flow.conf /etc/nginx/sites-available/email-flow.conf
 sudo ln -sf /etc/nginx/sites-available/email-flow.conf /etc/nginx/sites-enabled/email-flow.conf
 sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-Ta konfiguracja kieruje ruch z publicznego `http://95.158.64.196` do aplikacji nasluchujacej lokalnie na `127.0.0.1:8085`.
+Ta konfiguracja kieruje ruch z publicznego `http://95.158.64.196/email-flow/` do aplikacji nasluchujacej lokalnie na `127.0.0.1:8085`.
 
 ## Konfiguracja MCP do emaila
 
@@ -137,5 +137,3 @@ Tam nalezy podpiac konkretny transport MCP do wybranego serwera obslugujacego sk
 - integracja MCP jest przygotowana architektonicznie, ale nie jest jeszcze spieta z konkretnym dostawca skrzynki,
 - klasyfikacja zapytan i budowa kosztorysu dzialaja regulowo z miejscem na dalsze nody LangGraph,
 - odpowiedz mailowa jest generowana i zapisywana w bazie, ale fizyczna wysylka przez MCP wymaga dopiecia konkretnej implementacji klienta.
-
-#end of file --------

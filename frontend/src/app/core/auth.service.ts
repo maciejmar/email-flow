@@ -4,8 +4,8 @@ import { firstValueFrom } from 'rxjs';
 
 import { User } from './api.types';
 
-const API_BASE = '/api';
-const TOKEN_KEY = 'foga_flow_token';
+const API_BASE = 'api';
+const TOKEN_KEY = 'email_flow_token';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
