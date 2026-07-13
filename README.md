@@ -51,12 +51,12 @@ npm install
 npm start
 ```
 
-Frontend bedzie dostepny pod `http://localhost:4200/email-flow/`, a `proxy.conf.json` przekieruje lokalne `/email-flow/api` do backendu na `http://localhost:8000` po dopieciu lokalnego proxy pod prefiks.
+Frontend bedzie dostepny pod `http://localhost:4200/email-flow/`.
 
 ## Deploy na serwer 95.158.64.196
 
 Workflow deployu uruchamia sie po `push` na branch `master` albo recznie przez `workflow_dispatch`.
-Kod jest kopiowany na serwer do katalogu `/home/webaby/email-flow`, a potem GitHub Actions wykonuje:
+Kod jest kopiowany na serwer do katalogu `/opt/email-flow`, a potem GitHub Actions wykonuje:
 
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
@@ -69,8 +69,8 @@ W tej wersji aplikacja jest wystawiona pod prefiksem `http://95.158.64.196/email
 - zainstalowany Docker i Docker Compose,
 - uzytkownik z dostepem SSH,
 - port SSH dostepny na `2222`,
-- katalog docelowy `/home/webaby/email-flow` z prawami zapisu dla uzytkownika deployujacego,
-- dzialajacy Nginx na ho?cie.
+- katalog docelowy `/opt/email-flow` z prawami zapisu dla uzytkownika deployujacego,
+- dzialajacy Nginx na hoscie.
 
 ### Sekrety GitHub Actions
 
@@ -91,16 +91,12 @@ Ustaw w repozytorium te sekrety:
 
 ### Konfiguracja zewnetrznego Nginx na serwerze
 
-Skopiuj `deploy/nginx/email-flow.conf` na serwer, np. do `/etc/nginx/sites-available/email-flow.conf`, a potem podlacz go do aktywnej konfiguracji Nginx:
-
 ```bash
-sudo cp /home/webaby/email-flow/deploy/nginx/email-flow.conf /etc/nginx/sites-available/email-flow.conf
+sudo cp /opt/email-flow/deploy/nginx/email-flow.conf /etc/nginx/sites-available/email-flow.conf
 sudo ln -sf /etc/nginx/sites-available/email-flow.conf /etc/nginx/sites-enabled/email-flow.conf
 sudo nginx -t
 sudo systemctl reload nginx
 ```
-
-Ta konfiguracja kieruje ruch z publicznego `http://95.158.64.196/email-flow/` do aplikacji nasluchujacej lokalnie na `127.0.0.1:8085`.
 
 ## Konfiguracja MCP do emaila
 
@@ -109,32 +105,3 @@ W tym MVP jest przygotowany adapter `MCPEmailClient`, ktory ma jeden punkt integ
 - `backend/app/services/email_mcp.py`
 
 Tam nalezy podpiac konkretny transport MCP do wybranego serwera obslugujacego skrzynke mailowa. Obecnie adapter dziala w trybie `mock`, zeby caly przeplyw aplikacji byl gotowy bez blokowania sie na szczegolach konkretnego serwera MCP.
-
-## Glowne endpointy
-
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `GET /api/inquiries`
-- `POST /api/pricing/upload`
-- `POST /api/agent/process-inbox`
-
-## Co jest juz gotowe
-
-- modele uzytkownikow, zapytan, produktow i kosztorysow,
-- JWT auth,
-- dashboard z logowaniem i rejestracja,
-- upload Excela z cennikiem,
-- szkielet przeplywu LangGraph:
-  - pobierz maile,
-  - sklasyfikuj wiadomosci,
-  - zapisz zapytania,
-  - zbuduj kosztorys,
-  - przygotuj odpowiedz.
-
-## Ograniczenia obecnego MVP
-
-- integracja MCP jest przygotowana architektonicznie, ale nie jest jeszcze spieta z konkretnym dostawca skrzynki,
-- klasyfikacja zapytan i budowa kosztorysu dzialaja regulowo z miejscem na dalsze nody LangGraph,
-- odpowiedz mailowa jest generowana i zapisywana w bazie, ale fizyczna wysylka przez MCP wymaga dopiecia konkretnej implementacji klienta.
-

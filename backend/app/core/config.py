@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     app_name: str = "Foga Flow API"
     secret_key: str = "change-me"
     access_token_expire_minutes: int = 1440
-    database_url: str = "postgresql://postgres:postgres@localhost:5432/foga_flow"
+    database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/foga_flow"
     frontend_origin: str = "http://localhost:4200"
     email_mcp_mode: str = "mock"
     email_mcp_server_name: str = "email"
@@ -23,4 +23,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-
