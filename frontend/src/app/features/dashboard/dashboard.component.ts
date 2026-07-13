@@ -43,7 +43,7 @@ import { InquiryService } from '../../core/inquiry.service';
           <div class="metric-card h-100">
             <div class="text-uppercase small fw-semibold text-muted mb-2">Liczba zapytan</div>
             <div class="metric-value mb-2">{{ inquiries().length }}</div>
-            <div class="text-muted-soft">Widok listy pytan klientow wykrytych przez agenta.</div>
+            <div class="text-muted-soft">Widok pokazuje tylko maile zakwalifikowane jako zapytania klientow.</div>
           </div>
         </div>
 
@@ -59,15 +59,20 @@ import { InquiryService } from '../../core/inquiry.service';
       <div class="row g-4 align-items-stretch">
         <div class="col-xl-7">
           <article class="feature-tile h-100">
-            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-wrap">
               <div>
                 <h2 class="h4 fw-bold mb-1">Konfiguracja skrzynki usera</h2>
-                <p class="section-copy mb-0">To sa ustawienia przypiete do zalogowanego konta. Puste pola hasel nie nadpisuja zapisanych sekretow.</p>
+                <p class="section-copy mb-0">Sekcja jest zwijana, zeby nie kliknac przypadkowo. Puste pola hasel nie nadpisuja zapisanych sekretow.</p>
               </div>
-              <span class="status-badge">Tenant</span>
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="status-badge">{{ mailboxConfigured() ? 'Skonfigurowana' : 'Wymaga ustawienia' }}</span>
+                <button class="btn btn-outline-dark rounded-pill px-3" type="button" (click)="toggleMailboxConfig()">
+                  {{ showMailboxConfig() ? 'Ukryj konfiguracje' : 'Pokaz konfiguracje' }}
+                </button>
+              </div>
             </div>
 
-            <form class="row g-3" (ngSubmit)="saveMailboxSettings()">
+            <form *ngIf="showMailboxConfig()" class="row g-3" (ngSubmit)="saveMailboxSettings()">
               <div class="col-md-4">
                 <label class="form-label fw-semibold">Tryb integracji</label>
                 <select class="form-select" [(ngModel)]="mailboxForm.integration_mode" name="integration_mode">
@@ -152,6 +157,11 @@ import { InquiryService } from '../../core/inquiry.service';
                 <span class="text-muted-soft" *ngIf="mailboxMessage()">{{ mailboxMessage() }}</span>
               </div>
             </form>
+
+            <div *ngIf="!showMailboxConfig()" class="body-box">
+              <div class="fw-semibold mb-2">Konfiguracja ukryta</div>
+              <p class="mb-0">Skrzynka jest juz ustawiona. Rozwin sekcje tylko wtedy, gdy chcesz swiadomie zmienic dane IMAP lub SMTP.</p>
+            </div>
           </article>
         </div>
 
@@ -183,7 +193,7 @@ import { InquiryService } from '../../core/inquiry.service';
         </div>
       </div>
 
-      <section class="inquiry-grid">
+      <section class="inquiry-grid" *ngIf="inquiries().length; else noInquiries">
         <article class="inquiry-card" *ngFor="let inquiry of inquiries()">
           <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
             <div>
@@ -221,6 +231,13 @@ import { InquiryService } from '../../core/inquiry.service';
           </div>
         </article>
       </section>
+
+      <ng-template #noInquiries>
+        <section class="feature-tile">
+          <h2 class="h4 fw-bold mb-2">Brak zapytan klientow</h2>
+          <p class="mb-0 section-copy">Lista pozostaje pusta, dopoki agent nie znajdzie maili spelniajacych warunki zapytania klienckiego.</p>
+        </section>
+      </ng-template>
     </section>
   `,
 })
@@ -234,6 +251,7 @@ export class DashboardComponent {
   uploadMessage = signal('');
   mailboxMessage = signal('');
   mailboxSettings = signal<MailboxSettings | null>(null);
+  showMailboxConfig = signal(true);
   mailboxForm = {
     integration_mode: 'disabled' as 'disabled' | 'imap',
     email_imap_host: '',
@@ -270,6 +288,7 @@ export class DashboardComponent {
   async loadMailboxSettings(): Promise<void> {
     const settings = await this.inquiryService.getMailboxSettings();
     this.mailboxSettings.set(settings);
+    this.showMailboxConfig.set(!this.mailboxConfigured(settings));
     this.mailboxForm.integration_mode = settings.integration_mode;
     this.mailboxForm.email_imap_host = settings.email_imap_host ?? '';
     this.mailboxForm.email_imap_port = settings.email_imap_port;
@@ -308,6 +327,7 @@ export class DashboardComponent {
       this.mailboxForm.email_imap_password = '';
       this.mailboxForm.email_smtp_password = '';
       this.mailboxMessage.set('Ustawienia skrzynki zapisane dla tego uzytkownika.');
+      this.showMailboxConfig.set(false);
       await this.auth.loadProfile();
     } catch {
       this.mailboxMessage.set('Nie udalo sie zapisac ustawien skrzynki.');
@@ -346,6 +366,17 @@ export class DashboardComponent {
       return 'Ladowanie';
     }
     return settings.integration_mode === 'imap' ? 'IMAP aktywny' : 'Integracja wylaczona';
+  }
+
+  mailboxConfigured(settings: MailboxSettings | null = this.mailboxSettings()): boolean {
+    if (!settings) {
+      return false;
+    }
+    return settings.integration_mode === 'imap' && !!settings.email_imap_host && !!settings.email_imap_username && settings.has_imap_password;
+  }
+
+  toggleMailboxConfig(): void {
+    this.showMailboxConfig.set(!this.showMailboxConfig());
   }
 
   emptyToNull(value: string): string | null {
