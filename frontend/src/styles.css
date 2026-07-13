@@ -4,8 +4,8 @@
   --bg-deep: #071a1f;
   --bg-mid: #123946;
   --bg-warm: #f0b46c;
-  --surface: rgba(255, 255, 255, 0.86);
-  --surface-strong: rgba(255, 255, 255, 0.94);
+  --surface: rgba(255, 255, 255, 0.5);
+  --surface-strong: rgba(255, 255, 255, 0.5);
   --ink: #14252d;
   --muted: #5f7280;
   --line: rgba(19, 57, 70, 0.14);
@@ -229,3 +229,4 @@ select {
     min-height: auto;
   }
 }
+
