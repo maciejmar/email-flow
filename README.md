@@ -37,6 +37,7 @@ cd backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+To od razu potwierdzi, czy problem jest w starym pliku na serw
 copy .env.example .env
 uvicorn app.main:app --reload
 ```
