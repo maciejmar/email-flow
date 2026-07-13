@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { Inquiry } from './api.types';
+import { Inquiry, MailboxSettings } from './api.types';
 
 const API_BASE = 'api';
 
@@ -29,5 +29,28 @@ export class InquiryService {
     return firstValueFrom(
       this.http.post<{ imported_products: number }>(`${API_BASE}/pricing/upload`, formData),
     );
+  }
+
+  getMailboxSettings(): Promise<MailboxSettings> {
+    return firstValueFrom(this.http.get<MailboxSettings>(`${API_BASE}/auth/mailbox`));
+  }
+
+  updateMailboxSettings(payload: {
+    integration_mode: 'disabled' | 'imap';
+    email_imap_host: string | null;
+    email_imap_port: number;
+    email_imap_username: string | null;
+    email_imap_password: string | null;
+    email_imap_mailbox: string;
+    email_imap_use_ssl: boolean;
+    email_imap_search: string;
+    email_smtp_host: string | null;
+    email_smtp_port: number;
+    email_smtp_username: string | null;
+    email_smtp_password: string | null;
+    email_smtp_use_ssl: boolean;
+    email_smtp_from: string | null;
+  }): Promise<MailboxSettings> {
+    return firstValueFrom(this.http.put<MailboxSettings>(`${API_BASE}/auth/mailbox`, payload));
   }
 }

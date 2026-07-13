@@ -9,8 +9,6 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 1440
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/foga_flow"
     frontend_origin: str = "http://localhost:4200"
-    email_mcp_mode: str = "mock"
-    email_mcp_server_name: str = "email"
     email_poll_limit: int = 20
     upload_dir: str = "uploads"
 

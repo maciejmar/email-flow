@@ -1,4 +1,4 @@
-# Foga Flow
+# Email Flow
 
 MVP aplikacji do obslugi zapytan mailowych klientow w stacku `LangGraph + Python + Angular + Postgres`.
 
@@ -6,12 +6,25 @@ MVP aplikacji do obslugi zapytan mailowych klientow w stacku `LangGraph + Python
 
 - rejestracja i logowanie uzytkownika,
 - dashboard dostepny po zalogowaniu,
-- pobieranie wiadomosci ze skrzynki przez adapter MCP,
+- konfiguracja skrzynki email per user po zalogowaniu,
+- pobieranie wiadomosci ze skrzynki przypisanej do danego usera,
 - rozpoznawanie, czy wiadomosc jest zapytaniem klienckim,
 - odkladanie zapytan do dashboardu,
 - import cennika z pliku Excel,
 - generowanie kosztorysow na bazie cennika,
-- przygotowanie odpowiedzi mailowej z kosztorysem.
+- przygotowanie odpowiedzi mailowej z kosztorysem,
+- opcjonalne wysylanie odpowiedzi przez SMTP z konta danego usera.
+
+## Multi-tenant
+
+Ta aplikacja jest multi-tenant na poziomie uzytkownika. To oznacza:
+
+- kazdy user ma wlasny cennik,
+- kazdy user ma wlasna liste zapytan,
+- kazdy user ma wlasna konfiguracje skrzynki IMAP/SMTP,
+- konfiguracja maila nie jest juz globalna w `.env.prod`.
+
+Ustawienia skrzynki zapisuje sie po zalogowaniu w dashboardzie, w sekcji konfiguracji skrzynki.
 
 ## Struktura
 
@@ -37,7 +50,6 @@ cd backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-To od razu potwierdzi, czy problem jest w starym pliku na serw
 copy .env.example .env
 uvicorn app.main:app --reload
 ```
@@ -63,7 +75,7 @@ Kod jest kopiowany na serwer do katalogu `/opt/email-flow`, a potem GitHub Actio
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ```
 
-W tej wersji aplikacja jest wystawiona pod prefiksem `http://95.158.64.196/email-flow/`. Kontener `frontend` wystawia sie tylko lokalnie na serwerze pod `127.0.0.1:8085`, a publiczny ruch obsluguje istniejacy Nginx systemowy.
+Aplikacja jest wystawiona pod prefiksem `http://95.158.64.196/email-flow/`. Kontener `frontend` wystawia sie lokalnie na serwerze pod `127.0.0.1:8085`, a publiczny ruch obsluguje systemowy Nginx.
 
 ### Wymagania na serwerze
 
@@ -81,13 +93,11 @@ Ustaw w repozytorium te sekrety:
 - `DEPLOY_PORT` = `2222`
 - `DEPLOY_USER` = `webaby`
 - `DEPLOY_SSH_KEY` = prywatny klucz SSH do deployu
-- `APP_SECRET_KEY` = sekret JWT backendu
+- `SECRET_KEY` = sekret JWT backendu
 - `POSTGRES_DB` = nazwa bazy, np. `email_flow`
 - `POSTGRES_USER` = uzytkownik Postgresa
 - `POSTGRES_PASSWORD` = haslo Postgresa
 - `FRONTEND_ORIGIN` = publiczny origin frontendu, np. `http://95.158.64.196`
-- `EMAIL_MCP_MODE` = na start moze zostac `mock`
-- `EMAIL_MCP_SERVER_NAME` = nazwa integracji MCP, np. `email`
 - `EMAIL_POLL_LIMIT` = np. `20`
 
 ### Konfiguracja zewnetrznego Nginx na serwerze
@@ -99,11 +109,22 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-## Konfiguracja MCP do emaila
+## Skrzynka email per user
 
-W tym MVP jest przygotowany adapter `MCPEmailClient`, ktory ma jeden punkt integracji:
+Po zalogowaniu user w dashboardzie ustawia wlasne dane:
 
-- `backend/app/services/email_mcp.py`
+- tryb integracji `disabled` albo `imap`,
+- host, port, login, haslo IMAP,
+- folder i filtr wyszukiwania IMAP,
+- opcjonalnie host, port, login, haslo i adres nadawcy SMTP.
 
-Tam nalezy podpiac konkretny transport MCP do wybranego serwera obslugujacego skrzynke mailowa. Obecnie adapter dziala w trybie `mock`, zeby caly przeplyw aplikacji byl gotowy bez blokowania sie na szczegolach konkretnego serwera MCP.
+Jak dziala ten model:
 
+- agent pobiera maile z konta zalogowanego usera,
+- agent zapisuje zapytania tylko do tenant scope tego usera,
+- odpowiedzi SMTP sa wysylane z danych zapisanych dla tego usera,
+- `.env.prod` nie przechowuje juz danych skrzynki dla wszystkich tenantow.
+
+## Uwaga bezpieczenstwa
+
+W aktualnym MVP hasla IMAP i SMTP sa przechowywane w bazie aplikacji, zeby mozna bylo szybko uruchomic multi-tenant flow. Produkcyjnie warto je zaszyfrowac kluczem aplikacyjnym albo przeniesc do wydzielonego secret store.

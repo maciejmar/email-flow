@@ -1,4 +1,4 @@
-name: Deploy Foga Flow
+name: Deploy Email Flow
 
 on:
   push:
@@ -34,15 +34,13 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           FRONTEND_ORIGIN: ${{ secrets.FRONTEND_ORIGIN }}
-          EMAIL_MCP_MODE: ${{ secrets.EMAIL_MCP_MODE }}
-          EMAIL_MCP_SERVER_NAME: ${{ secrets.EMAIL_MCP_SERVER_NAME }}
           EMAIL_POLL_LIMIT: ${{ secrets.EMAIL_POLL_LIMIT }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
-          envs: APP_SECRET_KEY,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,FRONTEND_ORIGIN,EMAIL_MCP_MODE,EMAIL_MCP_SERVER_NAME,EMAIL_POLL_LIMIT
+          envs: APP_SECRET_KEY,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,FRONTEND_ORIGIN,EMAIL_POLL_LIMIT
           script: |
             set -eu
             mkdir -p /opt/email-flow
@@ -53,8 +51,6 @@ jobs:
             POSTGRES_USER=${POSTGRES_USER}
             POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
             FRONTEND_ORIGIN=${FRONTEND_ORIGIN}
-            EMAIL_MCP_MODE=${EMAIL_MCP_MODE}
-            EMAIL_MCP_SERVER_NAME=${EMAIL_MCP_SERVER_NAME}
             EMAIL_POLL_LIMIT=${EMAIL_POLL_LIMIT}
             EOF
             docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build

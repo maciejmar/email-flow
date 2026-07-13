@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.core.config import settings
 from app.db.base import Base
+from app.db.bootstrap import ensure_runtime_schema
 from app.db.session import engine
 from app.models import estimate, inquiry, product, user  # noqa: F401
 
@@ -20,6 +21,7 @@ def create_app() -> FastAPI:
     )
 
     Base.metadata.create_all(bind=engine)
+    ensure_runtime_schema(engine)
     app.include_router(api_router, prefix="/api")
 
     @app.get("/health")

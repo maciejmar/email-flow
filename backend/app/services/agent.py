@@ -5,11 +5,12 @@ from langgraph.graph import END, StateGraph
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.estimate import Estimate, EstimateLine
 from app.models.inquiry import Inquiry, InquiryStatus
 from app.models.product import Product
 from app.models.user import User
-from app.services.email_mcp import EmailMessage, MCPEmailClient
+from app.services.email_mcp import EmailMessage, MCPEmailClient, UserMailboxSettings
 from app.services.pricing import find_matching_products
 
 
@@ -29,14 +30,19 @@ def is_customer_inquiry(message: EmailMessage) -> tuple[bool, str]:
     return False, "Brak wzorcow sugerujacych zapytanie klienta."
 
 
+def build_email_client(user: User) -> MCPEmailClient:
+    mailbox_settings = UserMailboxSettings.from_user(user)
+    return MCPEmailClient(mailbox_settings=mailbox_settings, poll_limit=settings.email_poll_limit)
+
+
 def fetch_inbox(state: AgentState) -> AgentState:
-    client = MCPEmailClient()
+    client = build_email_client(state["user"])
     state["inbox"] = client.fetch_messages()
     return state
 
 
 def process_messages(state: AgentState, db: Session) -> AgentState:
-    client = MCPEmailClient()
+    client = build_email_client(state["user"])
     for message in state["inbox"]:
         exists = db.scalar(
             select(Inquiry).where(
@@ -159,3 +165,4 @@ def process_inbox(db: Session, user: User) -> dict[str, int]:
         "estimates_created": result["estimates_created"],
         "replies_prepared": result["replies_prepared"],
     }
+
