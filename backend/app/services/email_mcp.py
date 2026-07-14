@@ -3,10 +3,39 @@ from email import message_from_bytes
 from email.header import decode_header, make_header
 from email.message import EmailMessage as SMTPEmailMessage
 from email.utils import parseaddr
+from html import unescape
+from html.parser import HTMLParser
 import imaplib
+import re
 import smtplib
 
 from app.models.user import User
+
+
+class _HTMLToTextParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.parts: list[str] = []
+        self.skip_depth = 0
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag in {"script", "style", "head", "title", "meta"}:
+            self.skip_depth += 1
+        elif tag in {"br", "p", "div", "tr", "li", "section", "article", "h1", "h2", "h3", "h4", "h5", "h6"}:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"script", "style", "head", "title", "meta"} and self.skip_depth:
+            self.skip_depth -= 1
+        elif tag in {"p", "div", "tr", "li", "section", "article"}:
+            self.parts.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        if not self.skip_depth:
+            self.parts.append(data)
+
+    def get_text(self) -> str:
+        return "".join(self.parts)
 
 
 @dataclass
@@ -155,8 +184,8 @@ class MCPEmailClient:
                     continue
                 charset = part.get_content_charset() or "utf-8"
                 decoded = payload.decode(charset, errors="replace").strip()
-                if content_type == "text/plain" and decoded:
-                    return decoded
+                if content_type == "text/plain" and self._looks_human(decoded):
+                    return self._normalize_text(decoded)
                 if content_type == "text/html" and decoded and not html_fallback:
                     html_fallback = self._strip_html(decoded)
             return html_fallback
@@ -168,7 +197,9 @@ class MCPEmailClient:
         decoded = payload.decode(charset, errors="replace").strip()
         if parsed_message.get_content_type() == "text/html":
             return self._strip_html(decoded)
-        return decoded
+        if self._looks_human(decoded):
+            return self._normalize_text(decoded)
+        return self._strip_html(decoded)
 
     def _decode_mime_header(self, value: str) -> str:
         try:
@@ -177,19 +208,20 @@ class MCPEmailClient:
             return value
 
     def _strip_html(self, value: str) -> str:
-        text = value.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
-        chunks = []
-        inside_tag = False
-        for char in text:
-            if char == "<":
-                inside_tag = True
-                continue
-            if char == ">":
-                inside_tag = False
-                continue
-            if not inside_tag:
-                chunks.append(char)
-        return "".join(chunks).strip()
+        parser = _HTMLToTextParser()
+        parser.feed(value)
+        text = unescape(parser.get_text())
+        return self._normalize_text(text)
+
+    def _normalize_text(self, value: str) -> str:
+        text = value.replace("\r", "")
+        text = re.sub(r"[ \t]+", " ", text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        return text.strip()
+
+    def _looks_human(self, value: str) -> bool:
+        sample = value.lower()
+        return "<html" not in sample and "body{" not in sample and "font-family:" not in sample
 
     def _validate_imap_settings(self) -> None:
         required = {
@@ -210,4 +242,3 @@ class MCPEmailClient:
         missing = [name for name, value in required.items() if not value]
         if missing:
             raise RuntimeError(f"Missing SMTP settings for user: {', '.join(missing)}")
-

@@ -389,3 +389,4 @@ export class DashboardComponent {
     void this.router.navigateByUrl('/login');
   }
 }
+

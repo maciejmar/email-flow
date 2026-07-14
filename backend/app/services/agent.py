@@ -22,12 +22,41 @@ class AgentState(TypedDict):
     replies_prepared: int
 
 
+POSITIVE_KEYWORDS = ["wycena", "kosztorys", "prosze o wycene", "zapytanie ofertowe"]
+NEGATIVE_KEYWORDS = [
+    "newsletter",
+    "no-reply",
+    "noreply",
+    "oferta b2b",
+    "promocja",
+    "rabat",
+    "wyprzedaz",
+    "subskrypc",
+    "marketing",
+    "kampania",
+    "nowosci",
+]
+REQUEST_HINTS = ["prosze", "potrzeb", "ile koszt", "jaka cena", "zamow", "szt", "sztuk", "rega", "shelf", "rack"]
+
+
 def is_customer_inquiry(message: EmailMessage) -> tuple[bool, str]:
-    content = f"{message.subject}\n{message.body}".lower()
-    keywords = ["wycena", "oferta", "kosztorys", "prosze o wycene", "zapytanie"]
-    if any(keyword in content for keyword in keywords):
-        return True, "Wiadomosc zawiera slowa kluczowe wskazujace na zapytanie ofertowe."
-    return False, "Brak wzorcow sugerujacych zapytanie klienta."
+    subject = message.subject.lower()
+    body = message.body.lower()
+    sender = message.sender.lower()
+    content = f"{subject}\n{body}"
+
+    negative_hits = [keyword for keyword in NEGATIVE_KEYWORDS if keyword in content or keyword in sender]
+    if negative_hits:
+        return False, f"Wiadomosc wyglada na mailing lub komunikat automatyczny: {', '.join(negative_hits[:3])}."
+
+    positive_hits = [keyword for keyword in POSITIVE_KEYWORDS if keyword in content]
+    request_hits = [keyword for keyword in REQUEST_HINTS if keyword in content]
+
+    if positive_hits and request_hits:
+        return True, "Wiadomosc zawiera slowa kluczowe wyceny oraz kontekst rzeczywistego zapytania klienta."
+    if positive_hits and "@" in sender and not sender.startswith("no-reply"):
+        return True, "Wiadomosc zawiera slowa kluczowe wskazujace na zapytanie ofertowe od nadawcy nieautomatycznego."
+    return False, "Brak wystarczajacych wzorcow sugerujacych rzeczywiste zapytanie klienta."
 
 
 def build_email_client(user: User) -> MCPEmailClient:
@@ -165,4 +194,3 @@ def process_inbox(db: Session, user: User) -> dict[str, int]:
         "estimates_created": result["estimates_created"],
         "replies_prepared": result["replies_prepared"],
     }
-
